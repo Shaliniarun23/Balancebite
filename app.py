@@ -87,10 +87,23 @@ with tab2:
         model.fit(X_train, y_train)
         preds = model.predict(X_test)
         results[name] = classification_report(y_test, preds, output_dict=True)['weighted avg']
-        if hasattr(model, "predict_proba"):
-            probas = model.predict_proba(X_test)[:, 1]
-            fpr, tpr, _ = roc_curve(y_test, probas)
-            roc_curves[name] = (fpr, tpr)
+        from sklearn.preprocessing import label_binarize
+from sklearn.metrics import RocCurveDisplay
+
+classes = np.unique(y_test)
+is_binary = len(classes) == 2
+
+if hasattr(model, "predict_proba") and is_binary:
+    probas = model.predict_proba(X_test)[:, 1]
+    fpr, tpr, _ = roc_curve(y_test, probas)
+    roc_curves[name] = (fpr, tpr)
+
+elif hasattr(model, "predict_proba") and not is_binary:
+    y_bin = label_binarize(y_test, classes=classes)
+    y_score = model.predict_proba(X_test)
+    for i in range(len(classes)):
+        fpr, tpr, _ = roc_curve(y_bin[:, i], y_score[:, i])
+        roc_curves[f"{name} (class {classes[i]})"] = (fpr, tpr)
 
     st.dataframe(pd.DataFrame(results).T.round(3))
 
