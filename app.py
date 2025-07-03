@@ -36,7 +36,7 @@ tabs = st.tabs(["📊 Data Visualization", "🤖 Classification", "🔍 Clusteri
 
 # -------------------- TAB 1: DATA VISUALIZATION --------------------
 
-
+with tab1:
     st.header("📊 Data Visualization")
     uploaded_file = st.file_uploader("Upload your dataset", type=["csv"], key="viz")
     if uploaded_file:
