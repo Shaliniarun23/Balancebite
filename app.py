@@ -32,7 +32,14 @@ df = load_data()
 st.set_page_config(layout="wide")
 st.title("🍽️ BalanceBite – End-to-End Analytics Dashboard")
 
-tabs = st.tabs(["📊 Data Visualization", "🤖 Classification", "🔍 Clustering", "🔗 Association Rules", "📈 Regression"])
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "📊 Data Visualization", 
+    "🤖 Classification", 
+    "📌 Clustering", 
+    "🔗 Association Rules", 
+    "📈 Regression"
+])
+
 
 # -------------------- TAB 1: DATA VISUALIZATION --------------------
 
