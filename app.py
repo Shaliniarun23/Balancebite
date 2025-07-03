@@ -65,8 +65,12 @@ with tab1:
 
 with tab2:
     st.header("🤖 Classification")
-    uploaded_file = st.file_uploader("Upload CSV with target column", type=["csv"], key="clf")
-    df = pd.read_csv(uploaded_file) if uploaded_file else pd.read_csv("BalanceBite_Final.csv")
+   @st.cache_data
+def load_data():
+    return pd.read_csv("BalanceBite_Final.csv")
+
+df = load_data()
+st.success("Data loaded from BalanceBite_Final.csv")
 
     target_col = st.selectbox("Select Target Column", df.columns)
     X = pd.get_dummies(df.drop(columns=[target_col]), drop_first=True)
@@ -114,15 +118,22 @@ elif hasattr(model, "predict_proba") and not is_binary:
     ax.set_title("Confusion Matrix")
     st.pyplot(fig)
 
-    if roc_curves:
-        st.subheader("ROC Curves")
-        fig, ax = plt.subplots()
-        for name, (fpr, tpr) in roc_curves.items():
+    # Check for binary classification
+if len(np.unique(y_test)) == 2:
+    st.subheader("ROC Curves")
+    fig, ax = plt.subplots()
+    for name, model in models.items():
+        if hasattr(model, "predict_proba"):
+            probas = model.predict_proba(X_test)[:, 1]
+            fpr, tpr, _ = roc_curve(y_test, probas)
             ax.plot(fpr, tpr, label=name)
-        ax.plot([0, 1], [0, 1], "k--")
-        ax.set_title("ROC Curve Comparison")
-        ax.legend()
-        st.pyplot(fig)
+    ax.plot([0, 1], [0, 1], "k--")
+    ax.set_title("ROC Curve Comparison (Binary Only)")
+    ax.legend()
+    st.pyplot(fig)
+else:
+    st.warning("ROC Curve only available for binary classification.")
+
 
 with tab3:
     st.header("📌 Clustering")
