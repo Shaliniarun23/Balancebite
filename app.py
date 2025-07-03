@@ -30,38 +30,33 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📈 Regression"
 ])
 
-with tab1:
-    st.header("📊 Data Visualization")
-    uploaded_file = st.file_uploader("Upload your dataset", type=["csv"], key="viz")
-    df = pd.read_csv(uploaded_file) if uploaded_file else pd.read_csv("BalanceBite_Final.csv")
 
-    st.subheader("Dataset Preview")
+  with tab1:
+    st.header("📊 Data Visualization")
+    
+    @st.cache_data
+    def load_data():
+        return pd.read_csv("BalanceBite_Final.csv")
+    
+    df = load_data()
+    st.success("Data loaded from BalanceBite_Final.csv")
+
+    st.subheader("Preview")
     st.dataframe(df.head())
 
-    st.subheader("Summary Statistics")
+    st.subheader("Column Summary")
     st.write(df.describe(include='all'))
 
-    numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
-    if "Age" in numeric_cols:
-        fig, ax = plt.subplots()
-        sns.histplot(df["Age"], bins=30, kde=True, ax=ax)
-        ax.set_title("Age Distribution")
-        st.pyplot(fig)
+    st.subheader("Missing Values")
+    st.write(df.isnull().sum())
 
-    if "Willingness_to_Pay" in df.columns:
-        fig, ax = plt.subplots()
-        sns.boxplot(x=df["Willingness_to_Pay"], ax=ax)
-        ax.set_title("Willingness to Pay")
-        st.pyplot(fig)
+    st.subheader("Correlation Matrix")
+    numeric_df = df.select_dtypes(include='number')
+    corr = numeric_df.corr()
+    fig, ax = plt.subplots()
+    sns.heatmap(corr, annot=True, cmap="coolwarm", ax=ax)
+    st.pyplot(fig)
 
-    if "Flavor_Profile" in df.columns:
-        st.bar_chart(df["Flavor_Profile"].value_counts())
-
-    if len(numeric_cols) > 1:
-        fig, ax = plt.subplots()
-        sns.heatmap(df[numeric_cols].corr(), annot=True, cmap="coolwarm", ax=ax)
-        ax.set_title("Correlation Heatmap")
-        st.pyplot(fig)
 
 with tab2:
     st.header("🤖 Classification")
