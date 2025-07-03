@@ -128,7 +128,13 @@ with tab4:
     st.header("🔗 Association Rules")
 
     if 'Purchased_Items' in df.columns:
-        transactions = df['Purchased_Items'].dropna().astype(str).apply(lambda x: x.split(','))
+       transactions = df[trans_col].dropna().astype(str).apply(lambda x: x.split(", ")).tolist()
+if trans_col in df.columns and df[trans_col].dropna().shape[0] > 0:
+    transactions = df[trans_col].dropna().astype(str).apply(lambda x: x.split(", ")).tolist()
+    # Proceed with association rules
+else:
+    st.warning("The selected transaction column is empty or invalid for association rule mining.")
+
         te = TransactionEncoder()
         te_ary = te.fit(transactions).transform(transactions)
         df_te = pd.DataFrame(te_ary, columns=te.columns_)
