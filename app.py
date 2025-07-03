@@ -23,7 +23,7 @@ import pandas as pd
 
 @st.cache_data
 def load_data():
-    df = pd.read_csv("BalanceBite Final.csv")  # Or your full filename
+    df = pd.read_csv("BalanceBite_Final.csv")  # Or your full filename
     return df
 
 
