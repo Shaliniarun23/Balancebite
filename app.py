@@ -35,14 +35,8 @@ st.title("🍽️ BalanceBite – End-to-End Analytics Dashboard")
 tabs = st.tabs(["📊 Data Visualization", "🤖 Classification", "🔍 Clustering", "🔗 Association Rules", "📈 Regression"])
 
 # -------------------- TAB 1: DATA VISUALIZATION --------------------
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "📊 Data Visualization", 
-    "🤖 Classification", 
-    "📌 Clustering", 
-    "🔗 Association Rules", 
-    "📈 Regression"
-])
-with tab1:
+
+
     st.header("📊 Data Visualization")
     uploaded_file = st.file_uploader("Upload your dataset", type=["csv"], key="viz")
     if uploaded_file:
