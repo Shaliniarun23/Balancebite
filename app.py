@@ -5,8 +5,11 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix, mean_squared_error, r2_score
 from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.metrics import (
+    classification_report, confusion_matrix, roc_curve, auc,
+    mean_squared_error, r2_score
+)
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
@@ -15,11 +18,10 @@ from sklearn.cluster import KMeans
 from mlxtend.frequent_patterns import apriori, association_rules
 from mlxtend.preprocessing import TransactionEncoder
 
-# Set app config
-st.set_page_config(page_title="BalanceBite – End-to-End Analytics Dashboard", layout="wide")
+# App layout
+st.set_page_config(page_title="BalanceBite – Analytics Dashboard", layout="wide")
 st.title("🍽️ BalanceBite – End-to-End Analytics Dashboard")
 
-# Define tab structure
 tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📊 Data Visualization", 
     "🤖 Classification", 
@@ -28,15 +30,10 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
     "📈 Regression"
 ])
 
-# -------------------- TAB 1: DATA VISUALIZATION --------------------
 with tab1:
     st.header("📊 Data Visualization")
-
     uploaded_file = st.file_uploader("Upload your dataset", type=["csv"], key="viz")
-    if uploaded_file:
-        df = pd.read_csv(uploaded_file)
-    else:
-        df = pd.read_csv("BalanceBite_Final.csv")
+    df = pd.read_csv(uploaded_file) if uploaded_file else pd.read_csv("BalanceBite_Final.csv")
 
     st.subheader("Dataset Preview")
     st.dataframe(df.head())
@@ -44,32 +41,36 @@ with tab1:
     st.subheader("Summary Statistics")
     st.write(df.describe(include='all'))
 
-    if 'Gender' in df.columns and 'Avg Spend per Visit' in df.columns:
-        st.subheader("Average Spend by Gender")
+    numeric_cols = df.select_dtypes(include=np.number).columns.tolist()
+    if "Age" in numeric_cols:
         fig, ax = plt.subplots()
-        sns.barplot(data=df, x='Gender', y='Avg Spend per Visit', ax=ax)
+        sns.histplot(df["Age"], bins=30, kde=True, ax=ax)
+        ax.set_title("Age Distribution")
         st.pyplot(fig)
 
-    if 'Avg Spend per Visit' in df.columns:
-        st.subheader("Spend Distribution")
+    if "Willingness_to_Pay" in df.columns:
         fig, ax = plt.subplots()
-        sns.histplot(df['Avg Spend per Visit'], bins=30, kde=True, ax=ax)
+        sns.boxplot(x=df["Willingness_to_Pay"], ax=ax)
+        ax.set_title("Willingness to Pay")
         st.pyplot(fig)
 
-# -------------------- TAB 2: CLASSIFICATION --------------------
+    if "Flavor_Profile" in df.columns:
+        st.bar_chart(df["Flavor_Profile"].value_counts())
+
+    if len(numeric_cols) > 1:
+        fig, ax = plt.subplots()
+        sns.heatmap(df[numeric_cols].corr(), annot=True, cmap="coolwarm", ax=ax)
+        ax.set_title("Correlation Heatmap")
+        st.pyplot(fig)
+
 with tab2:
     st.header("🤖 Classification")
-
     uploaded_file = st.file_uploader("Upload CSV with target column", type=["csv"], key="clf")
-    if uploaded_file:
-        df = pd.read_csv(uploaded_file)
-    else:
-        df = pd.read_csv("BalanceBite_Final.csv")
+    df = pd.read_csv(uploaded_file) if uploaded_file else pd.read_csv("BalanceBite_Final.csv")
 
     target_col = st.selectbox("Select Target Column", df.columns)
     X = pd.get_dummies(df.drop(columns=[target_col]), drop_first=True)
     y = LabelEncoder().fit_transform(df[target_col])
-
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
     models = {
@@ -80,34 +81,43 @@ with tab2:
     }
 
     st.subheader("Classification Report")
-    results = {}
+    results, roc_curves = {}, {}
+
     for name, model in models.items():
         model.fit(X_train, y_train)
         preds = model.predict(X_test)
-        report = classification_report(y_test, preds, output_dict=True)
-        results[name] = report['weighted avg']
-    st.dataframe(pd.DataFrame(results).T)
+        results[name] = classification_report(y_test, preds, output_dict=True)['weighted avg']
+        if hasattr(model, "predict_proba"):
+            probas = model.predict_proba(X_test)[:, 1]
+            fpr, tpr, _ = roc_curve(y_test, probas)
+            roc_curves[name] = (fpr, tpr)
+
+    st.dataframe(pd.DataFrame(results).T.round(3))
 
     selected_model = st.selectbox("Choose model for Confusion Matrix", list(models.keys()))
     cm = confusion_matrix(y_test, models[selected_model].predict(X_test))
     fig, ax = plt.subplots()
     sns.heatmap(cm, annot=True, fmt="d", cmap="Blues", ax=ax)
-    st.subheader("Confusion Matrix")
+    ax.set_title("Confusion Matrix")
     st.pyplot(fig)
 
-# -------------------- TAB 3: CLUSTERING --------------------
+    if roc_curves:
+        st.subheader("ROC Curves")
+        fig, ax = plt.subplots()
+        for name, (fpr, tpr) in roc_curves.items():
+            ax.plot(fpr, tpr, label=name)
+        ax.plot([0, 1], [0, 1], "k--")
+        ax.set_title("ROC Curve Comparison")
+        ax.legend()
+        st.pyplot(fig)
+
 with tab3:
     st.header("📌 Clustering")
-
     uploaded_file = st.file_uploader("Upload CSV for Clustering", type=["csv"], key="cluster")
-    if uploaded_file:
-        df = pd.read_csv(uploaded_file)
-    else:
-        df = pd.read_csv("BalanceBite_Final.csv")
+    df = pd.read_csv(uploaded_file) if uploaded_file else pd.read_csv("BalanceBite_Final.csv")
 
     df_numeric = df.select_dtypes(include=['int64', 'float64']).dropna(axis=1)
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(df_numeric)
+    X_scaled = StandardScaler().fit_transform(df_numeric)
 
     st.subheader("Elbow Method")
     wcss = []
@@ -115,51 +125,42 @@ with tab3:
         kmeans = KMeans(n_clusters=i, random_state=42)
         kmeans.fit(X_scaled)
         wcss.append(kmeans.inertia_)
+
     fig, ax = plt.subplots()
     ax.plot(range(2, 11), wcss, marker='o')
-    ax.set_title("Optimal Clusters (Elbow Curve)")
+    ax.set_title("Elbow Curve")
     st.pyplot(fig)
 
     k = st.slider("Select number of clusters", 2, 10, 3)
     model = KMeans(n_clusters=k, random_state=42)
     df['Cluster'] = model.fit_predict(X_scaled)
+
     st.subheader("Clustered Data")
     st.dataframe(df.head())
     st.download_button("Download Clustered Data", df.to_csv(index=False), "clustered_data.csv")
 
-# -------------------- TAB 4: ASSOCIATION RULES --------------------
 with tab4:
     st.header("🔗 Association Rule Mining")
-
-    uploaded_file = st.file_uploader("Upload CSV with transactional column", type=["csv"], key="assoc")
-    if uploaded_file:
-        df = pd.read_csv(uploaded_file)
-    else:
-        df = pd.read_csv("BalanceBite_Final.csv")
+    uploaded_file = st.file_uploader("Upload CSV with multi-item column", type=["csv"], key="assoc")
+    df = pd.read_csv(uploaded_file) if uploaded_file else pd.read_csv("BalanceBite_Final.csv")
 
     trans_col = st.selectbox("Select column with comma-separated items", df.columns)
     transactions = df[trans_col].dropna().apply(lambda x: x.split(", ")).tolist()
 
     te = TransactionEncoder()
-    te_array = te.fit(transactions).transform(transactions)
-    df_encoded = pd.DataFrame(te_array, columns=te.columns_)
+    df_encoded = pd.DataFrame(te.fit(transactions).transform(transactions), columns=te.columns_)
 
     min_support = st.slider("Min Support", 0.01, 1.0, 0.1)
     min_conf = st.slider("Min Confidence", 0.1, 1.0, 0.5)
 
-    freq_items = apriori(df_encoded, min_support=min_support, use_colnames=True)
-    rules = association_rules(freq_items, metric="confidence", min_threshold=min_conf)
+    frequent_items = apriori(df_encoded, min_support=min_support, use_colnames=True)
+    rules = association_rules(frequent_items, metric="confidence", min_threshold=min_conf)
     st.dataframe(rules.sort_values("confidence", ascending=False).head(10))
 
-# -------------------- TAB 5: REGRESSION --------------------
 with tab5:
     st.header("📈 Regression")
-
     uploaded_file = st.file_uploader("Upload CSV for Regression", type=["csv"], key="reg")
-    if uploaded_file:
-        df = pd.read_csv(uploaded_file)
-    else:
-        df = pd.read_csv("BalanceBite_Final.csv")
+    df = pd.read_csv(uploaded_file) if uploaded_file else pd.read_csv("BalanceBite_Final.csv")
 
     target_col = st.selectbox("Select Target Column", df.columns)
     X = pd.get_dummies(df.drop(columns=[target_col]), drop_first=True)
