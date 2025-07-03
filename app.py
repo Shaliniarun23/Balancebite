@@ -33,29 +33,30 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs([
 
   with tab1:
     st.header("📊 Data Visualization")
-    
+
     @st.cache_data
     def load_data():
         return pd.read_csv("BalanceBite_Final.csv")
-    
+
     df = load_data()
     st.success("Data loaded from BalanceBite_Final.csv")
 
     st.subheader("Preview")
     st.dataframe(df.head())
 
-    st.subheader("Column Summary")
+    st.subheader("Summary Stats")
     st.write(df.describe(include='all'))
 
     st.subheader("Missing Values")
     st.write(df.isnull().sum())
 
-    st.subheader("Correlation Matrix")
+    st.subheader("Correlation Heatmap")
     numeric_df = df.select_dtypes(include='number')
     corr = numeric_df.corr()
-    fig, ax = plt.subplots()
+    fig, ax = plt.subplots(figsize=(10, 6))
     sns.heatmap(corr, annot=True, cmap="coolwarm", ax=ax)
     st.pyplot(fig)
+
 
 
 with tab2:
