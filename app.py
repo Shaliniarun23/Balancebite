@@ -1,23 +1,38 @@
 import streamlit as st
 import pandas as pd
-import seaborn as sns
+import numpy as np
 import matplotlib.pyplot as plt
+import seaborn as sns
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import (
-    classification_report, confusion_matrix, roc_curve,
-    mean_squared_error, r2_score
-)
 from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.metrics import classification_report, confusion_matrix, roc_curve, auc
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LinearRegression, Ridge, Lasso
+from sklearn.tree import DecisionTreeRegressor
 from sklearn.cluster import KMeans
 from mlxtend.frequent_patterns import apriori, association_rules
 from mlxtend.preprocessing import TransactionEncoder
+import plotly.express as px
+import plotly.graph_objects as go
+import io
 
-st.set_page_config(page_title="Consumer Insights Dashboard", layout="wide")
-st.title("📊 Consumer Insights Dashboard")
+import pandas as pd
+
+@st.cache_data
+def load_data():
+    df = pd.read_csv("Balancebite Final.csv")  # Or your full filename
+    return df
+
+
+
+df = load_data()
+st.set_page_config(layout="wide")
+st.title("🍽️ TasteMate Kitchen – End-to-End Analytics Dashboard")
+
+tabs = st.tabs(["📊 Data Visualization", "🤖 Classification", "🔍 Clustering", "🔗 Association Rules", "📈 Regression"])
+
 
 # Main Tab Layout
 tabs = st.tabs(["📊 Data Visualization",
