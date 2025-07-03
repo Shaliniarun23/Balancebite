@@ -21,3 +21,7 @@ This is an interactive Streamlit dashboard built to help businesses uncover insi
 ```bash
 git clone https://github.com/yourusername/consumer-insights-dashboard.git
 cd consumer-insights-dashboard
+
+pip install -r requirements.txt
+
+streamlit run app.py
